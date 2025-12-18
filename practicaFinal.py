@@ -24,14 +24,8 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 
-# crear sesion spark con MÁS MEMORIA
-spark = SparkSession.builder \
-    .appName("Practica Final") \
-    .config("spark.driver.memory", "8g") \
-    .config("spark.executor.memory", "8g") \
-    .config("spark.memory.offHeap.enabled", "true") \
-    .config("spark.memory.offHeap.size", "2g") \
-    .getOrCreate()
+# crear sesion spark
+spark = SparkSession.builder.appName("Practica Final").getOrCreate()
 
 # CARGA Y LIMPIEZA DE DATOS
 # cargar los datos con indicaciones para funcionar correctamente
@@ -403,49 +397,49 @@ plt.tight_layout()
 plt.show()
 
 # ALGORITMO ALS
-# """
-# # Entrenamiento
-# training, test = ratingsALS.randomSplit([0.8, 0.2])
-# als = ALS(maxIter=10, regParam=0.1, userCol="userId", itemCol="itemId", ratingCol="rating", coldStartStrategy="drop")
-# model = als.fit(training)
+# Entrenamiento
+training, test = ratingsALS.randomSplit([0.8, 0.2])
+als = ALS(maxIter=10, regParam=0.1, userCol="userId", itemCol="itemId", ratingCol="rating", coldStartStrategy="drop")
+model = als.fit(training)
 
-# # Predicción
-# predictions = model.transform(test)
-# rmse = RegressionEvaluator(metricName="rmse", labelCol="rating", predictionCol="prediction").evaluate(predictions)
-# print("RMSE =", rmse)
+# Predicción
+predictions = model.transform(test)
+rmse = RegressionEvaluator(metricName="rmse", labelCol="rating", predictionCol="prediction").evaluate(predictions)
+print("RMSE =", rmse)
 
-# # Recomendaciones usuario 666666
-# idUsuario = 666666
-# user_df = spark.createDataFrame([(idUsuario,)], ["userId"])
-# recs = model.recommendForUserSubset(user_df, 50)
-# recs_final = recs.select(explode(col("recommendations")).alias("rec")).select(col("rec.itemId").alias("anime_id"), col("rec.rating").alias("predicted_rating")).join(animeCSV, col("anime_id") == animeCSV.ID, "inner").select(col("anime_id"), col("Name").alias("titulo_original"), col("English_name").alias("titulo_ingles"), col("Type"), col("valoracion_media")).filter(col("Type").isin("movie","tv")).orderBy(col("valoracion_media").desc())
+# Recomendaciones usuario 666666
+idUsuario = 666666
+user_df = spark.createDataFrame([(idUsuario,)], ["userId"])
+recs = model.recommendForUserSubset(user_df, 50)
+recs_final = recs.select(explode(col("recommendations")).alias("rec")).select(col("rec.itemId").alias("anime_id"), col("rec.rating").alias("predicted_rating")).join(animeCSV, col("anime_id") == animeCSV.ID, "inner").select(col("anime_id"), col("Name").alias("titulo_original"), col("English_name").alias("titulo_ingles"), col("Type"), col("valoracion_media")).filter(col("Type").isin("movie","tv")).orderBy(col("valoracion_media").desc())
 
-# # Guardar recomendaciones en .txt
-# ruta_base = "/scripts/recomendaciones_usuario_666666"
-# for tipo in ["movie", "tv"]:
-#     ruta_tipo = f"{ruta_base}/{tipo}"
-#     (
-#         recs_final
-#         .filter(col("Type") == tipo)
-#         .limit(5)
-#         .select(concat_ws(" | ", col("anime_id"), col("titulo_original"), col("titulo_ingles"), col("valoracion_media")).alias("value"))
-#         .coalesce(1)
-#         .write
-#         .mode("overwrite")
-#         .text(ruta_tipo)
-#     )
+# Guardar recomendaciones en .txt
+ruta_base = "/scripts/recomendaciones_usuario_666666"
+for tipo in ["movie", "tv"]:
+    ruta_tipo = f"{ruta_base}/{tipo}"
+    (
+        recs_final
+        .filter(col("Type") == tipo)
+        .limit(5)
+        .select(concat_ws(" | ", col("anime_id"), col("titulo_original"), col("titulo_ingles"), col("valoracion_media")).alias("value"))
+        .coalesce(1)
+        .write
+        .mode("overwrite")
+        .text(ruta_tipo)
+    )
 
-# # Renombrar el archivo .txt part-xxxxx.txt → recomendaciones.txt
-#     for file in os.listdir(ruta_tipo):
-#         if file.startswith("part-") and file.endswith(".txt"):
-#             os.rename(os.path.join(ruta_tipo, file), os.path.join(ruta_tipo, "recomendaciones.txt"))
+# Renombrar el archivo .txt part-xxxxx.txt → recomendaciones.txt
+    for file in os.listdir(ruta_tipo):
+        if file.startswith("part-") and file.endswith(".txt"):
+            os.rename(os.path.join(ruta_tipo, file), os.path.join(ruta_tipo, "recomendaciones.txt"))
 
-# print("Fin del Algoritmo")
-# """
+print("Fin del Algoritmo")
 
+#API 
 console = Console()
 
 # Definimos las rutas de entrada creadas por ALS y las de salida
+BASE_DIR = os.path.dirname(os.path.abspath(_file_))  # Carpeta del script
 DIR_ENTRADA = "scripts/recomendaciones_usuario_666666"
 DIR_SALIDA = "recomendaciones_finales_666666"
 
@@ -583,3 +577,4 @@ if __name__ == "__main__":
     
     console.print(f"\n[bold white on green] FIN DEL PROCESO [/]")
     spark.stop()
+>>>>>>> upstream/main
